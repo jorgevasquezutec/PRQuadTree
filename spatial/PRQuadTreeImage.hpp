@@ -98,26 +98,24 @@ class PRQuadTreeImage : public SpatialImageBase {
       }
   }
 
-  void fillImage(std::unordered_map<int,std::unordered_map<int,pnm::rgb_pixel>> &image,NodeQuadTree* &current){
+   void fillImagePostOrden(pnm::image<pnm::rgb_pixel> &image,NodeQuadTree* &current){
         if(current==nullptr){
           return;
         }
-        if(current->isleaf){
-          for(int y=current->starty; y<=current->endy; ++y)
-            {
-                for(int x=current->startx; x<=current->endx; ++x)
-                { 
-                    // image[y][x] = current->pixel;
-                    image[y][x]=pnm::rgb_pixel((uint8_t)current->red,(uint8_t)current->green,(uint8_t)current->blue);
-                    // comparePixel( image[y][x],current);
-                }
-            }
-          return;
-        }else{
-          fillImage(image,current->q1);
-          fillImage(image,current->q2);
-          fillImage(image,current->q3);
-          fillImage(image,current->q4);
+        else{
+           fillImagePostOrden(image,current->q1);
+           fillImagePostOrden(image,current->q2);
+           fillImagePostOrden(image,current->q3);
+           fillImagePostOrden(image,current->q4);
+           if(current->isleaf){
+              for(int y=current->starty; y<=current->endy; ++y)
+              {
+                  for(int x=current->startx; x<=current->endx; ++x)
+                  { 
+                      image[y][x]=pnm::rgb_pixel((uint8_t)current->red,(uint8_t)current->green,(uint8_t)current->blue);                     
+                  }
+              }
+           }
         }
   }
 
@@ -186,7 +184,7 @@ class PRQuadTreeImage : public SpatialImageBase {
         if(outFile.is_open()){
             outFile.seekg(0,std::ios::end);
             outFile.write((char* )&_reg, sizeof(NodeQuadTree));
-            _pos=outFile.tellg()- sizeof(NodeQuadTree);
+            _pos=(long)outFile.tellg()- (long)sizeof(NodeQuadTree);
             outFile.close();
         }
         return _pos;
@@ -234,22 +232,10 @@ class PRQuadTreeImage : public SpatialImageBase {
       readDFS(this->rootDirection,nroot,filename);
   }
   void convertToPGM(const std::string& filename) override {
-    std::unordered_map<int,std::unordered_map<int,pnm::rgb_pixel>> newFile; 
-    fillImage(newFile,nroot);
-    std::ofstream tmpfile(filename);
-    tmpfile<<magicNumber<<std::endl;
-    tmpfile<<name<<std::endl;
-    tmpfile<<this->width<< " "<<this->height<<std::endl;
-    tmpfile<<this->value<<std::endl;
-
-    for(int i = 0;i<this->height;i++){
-        for(int y=0;y<this->width;y++){
-            tmpfile<<(uint16_t)newFile[i][y].red/ratio<<" "<<(uint16_t)newFile[i][y].green/ratio<<" "<<(uint16_t)newFile[i][y].blue/ratio<<"   ";
-        }
-        tmpfile<<std::endl;
-    }
-    tmpfile.close();
-  }
+       pnm::image<pnm::rgb_pixel> newFile (this->width,this->height);
+       fillImagePostOrden(newFile,nroot);
+       pnm::write(filename, newFile, pnm::format::ascii);
+   }
 };
 
 }  // namespace spatial

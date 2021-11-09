@@ -23,7 +23,7 @@ class PNMImage {
         {
             for(std::size_t x=0; x<ppmleft.x_size(); ++x)
             {
-                if(ppmleft[y][x] != ppmleft[y][x]){
+                if(ppmleft[y][x] != ppmright[y][x]){
                     return false;
                 }
             }
