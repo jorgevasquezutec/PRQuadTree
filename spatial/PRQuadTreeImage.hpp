@@ -9,9 +9,6 @@
 namespace utec {
 namespace spatial {
 
-
-int ratio;
-
 struct NodeQuadTree{
     long address{-1};
     long q1address{-1};
@@ -220,8 +217,6 @@ class PRQuadTreeImage : public SpatialImageBase {
       std::getline(file,line);
       std::getline(file,value);
       file.close();
-      ratio= 256 / (stoi(value) + 1);
-
       builQuadTree(0,ppm.x_size()-1,0,ppm.y_size()-1,this->root,ppm);
   }
   void compress(const std::string& filename) override {
