@@ -2,6 +2,7 @@
 #include "SpatialImageBase.hpp"
 #include "../utils/pnm.hpp"
 #include <iostream>
+#include <fstream>
 #include <cmath>
 #include <queue>
 #include <unordered_map>
@@ -11,20 +12,20 @@ namespace spatial {
 
 int ratio;
 
-template<typename T>
 struct NodeQuadTree{
-
     long address{-1};
     long q1address{-1};
     long q2address{-1};
     long q3address{-1};
     long q4address{-1};
-    NodeQuadTree<T> *q1;
-    NodeQuadTree<T> *q2;
-    NodeQuadTree<T> *q3;
-    NodeQuadTree<T> *q4;
+    NodeQuadTree *q1;
+    NodeQuadTree *q2;
+    NodeQuadTree *q3;
+    NodeQuadTree *q4;
     bool isleaf;
-    T pixel;
+    uint16_t red;
+    uint16_t green;
+    uint16_t blue;
     int startx;
     int endx;
     int starty;
@@ -43,14 +44,13 @@ struct NodeQuadTree{
  */
 class PRQuadTreeImage : public SpatialImageBase {
  private:
-  NodeQuadTree<pnm::rgb_pixel> *root;
-  NodeQuadTree<pnm::rgb_pixel> *nroot;
+  NodeQuadTree *root;
+  NodeQuadTree *nroot;
   int width;
   int height;
   std::string name;
   std::string magicNumber;
   std::string value;
-  long nextPostInsert{-1};
   long rootDirection{-1};
 
   bool diffPix(int startx,int starty,int endx,int endy,pnm::image<pnm::rgb_pixel> &ppm){
@@ -67,20 +67,30 @@ class PRQuadTreeImage : public SpatialImageBase {
     }
     return false;
   }
-  void builQuadTree(int startx,int endx,int starty,int endy, NodeQuadTree<pnm::rgb_pixel>* &parent, pnm::image<pnm::rgb_pixel> &ppm){
+
+  bool comparePixel(pnm::rgb_pixel &pix,NodeQuadTree* node){
+    if(pix.blue==node->blue && pix.red ==node->red && pix.green==node->green){
+      return true;
+    }
+    return false;
+  }
+
+  void builQuadTree(int startx,int endx,int starty,int endy, NodeQuadTree* &parent, pnm::image<pnm::rgb_pixel> &ppm){
 
       if(!diffPix(startx,starty,endx,endy,ppm)){
           parent->isleaf=true;
-          parent->pixel=ppm[starty][startx];
+          parent->blue=(uint16_t)ppm[starty][startx].blue;
+          parent->red=(uint16_t)ppm[starty][startx].red;
+          parent->green=(uint16_t)ppm[starty][startx].green;
           parent->startx=startx;
           parent->starty=starty;
           parent->endx=endx;
           parent->endy=endy;
       }else{
-        parent->q1=new NodeQuadTree<pnm::rgb_pixel>();
-        parent->q2=new NodeQuadTree<pnm::rgb_pixel>();
-        parent->q3=new NodeQuadTree<pnm::rgb_pixel>();
-        parent->q4=new NodeQuadTree<pnm::rgb_pixel>();
+        parent->q1=new NodeQuadTree();
+        parent->q2=new NodeQuadTree();
+        parent->q3=new NodeQuadTree();
+        parent->q4=new NodeQuadTree();
         builQuadTree(startx,floor((endx+startx)/2),starty,floor((endy+starty)/2),parent->q1,ppm);
         builQuadTree(floor((endx+startx)/2)+1,endx,starty,floor((endy+starty)/2),parent->q2,ppm);
         builQuadTree(startx,floor((endx+startx)/2),floor((endy+starty)/2)+1,endy,parent->q3,ppm);
@@ -88,7 +98,7 @@ class PRQuadTreeImage : public SpatialImageBase {
       }
   }
 
-  void fillImage(std::unordered_map<int,std::unordered_map<int,pnm::rgb_pixel>> &image,NodeQuadTree<pnm::rgb_pixel>* &current){
+  void fillImage(std::unordered_map<int,std::unordered_map<int,pnm::rgb_pixel>> &image,NodeQuadTree* &current){
         if(current==nullptr){
           return;
         }
@@ -97,7 +107,9 @@ class PRQuadTreeImage : public SpatialImageBase {
             {
                 for(int x=current->startx; x<=current->endx; ++x)
                 { 
-                  image[y][x] = current->pixel;
+                    // image[y][x] = current->pixel;
+                    image[y][x]=pnm::rgb_pixel((uint8_t)current->red,(uint8_t)current->green,(uint8_t)current->blue);
+                    // comparePixel( image[y][x],current);
                 }
             }
           return;
@@ -109,12 +121,8 @@ class PRQuadTreeImage : public SpatialImageBase {
         }
   }
 
-  void reserveMemory(){
-    auto address=this->nextPostInsert+sizeof(NodeQuadTree<pnm::rgb_pixel>);
-    this->nextPostInsert=address;
-  }
 
-  void insertPostOrden(NodeQuadTree<pnm::rgb_pixel>* &current,const std::string& filename){
+  void insertPostOrden(NodeQuadTree* &current,const std::string& filename){
       if(current==nullptr){
         return;
       }else{
@@ -136,21 +144,21 @@ class PRQuadTreeImage : public SpatialImageBase {
         if(current->q4!=nullptr){
           current->q4address=current->q4->address;
         }
-        current->address=this->nextPostInsert;
-        WriteNode(*current,current->address,filename);
-        reserveMemory();
+        current->address=WriteNode(*current,filename);
 
       }
   }
 
-  void readDFS(long pos,NodeQuadTree<pnm::rgb_pixel>* &current,const std::string& filename){
+  void readDFS(long pos,NodeQuadTree* &current,const std::string& filename){
       if(pos==-1){
         return;
       }
-      NodeQuadTree<pnm::rgb_pixel> obj=readNode(pos,filename);
+      NodeQuadTree obj=readNode(pos,filename);
       current->address=obj.address;
       current->isleaf=obj.isleaf;
-      current->pixel=obj.pixel;
+      current->red=obj.red;
+      current->blue=obj.blue;
+      current->green=obj.green;
       current->startx=obj.startx;
       current->starty=obj.starty;
       current->endx=obj.endx;
@@ -159,10 +167,10 @@ class PRQuadTreeImage : public SpatialImageBase {
       current->q2address=obj.q2address;
       current->q3address=obj.q3address;
       current->q4address=obj.q4address;
-      current->q1= new NodeQuadTree<pnm::rgb_pixel>();
-      current->q2= new NodeQuadTree<pnm::rgb_pixel>();
-      current->q3= new NodeQuadTree<pnm::rgb_pixel>();
-      current->q4= new NodeQuadTree<pnm::rgb_pixel>();
+      current->q1= new NodeQuadTree();
+      current->q2= new NodeQuadTree();
+      current->q3= new NodeQuadTree();
+      current->q4= new NodeQuadTree();
       readDFS(current->q1address,current->q1,filename);
       readDFS(current->q2address,current->q2,filename);
       readDFS(current->q3address,current->q3,filename);
@@ -171,26 +179,27 @@ class PRQuadTreeImage : public SpatialImageBase {
   }
 
 
-  void  WriteNode(NodeQuadTree<pnm::rgb_pixel> _reg,long pos,const std::string& filename){
+  long  WriteNode(NodeQuadTree _reg,const std::string& filename){
         std::fstream outFile;
         outFile.open(filename,std::ios::in| std::ios::out| std::ios::binary | std::ofstream::app);
         long _pos;
         if(outFile.is_open()){
-            outFile.seekg(pos, std::ios::beg);
-            outFile.write((char* )&_reg, sizeof(NodeQuadTree<pnm::rgb_pixel>));
-            _pos=outFile.tellg();
+            outFile.seekg(0,std::ios::end);
+            outFile.write((char* )&_reg, sizeof(NodeQuadTree));
+            _pos=outFile.tellg()- sizeof(NodeQuadTree);
             outFile.close();
         }
+        return _pos;
     }
   
 
-  NodeQuadTree<pnm::rgb_pixel> readNode(long pos,const std::string& filename){
+  NodeQuadTree readNode(long pos,const std::string& filename){
         std::ifstream outFile;
-        NodeQuadTree<pnm::rgb_pixel> obj;
+        NodeQuadTree obj;
         outFile.open(filename,std::ios::in| std::ios::out| std::ios::binary);
         if (outFile.is_open()) {
             outFile.seekg(pos, std::ios::beg);
-            outFile.read((char *) &obj, sizeof(NodeQuadTree<pnm::rgb_pixel>));
+            outFile.read((char *) &obj, sizeof(NodeQuadTree));
             outFile.close();
         }
         return obj;
@@ -199,8 +208,8 @@ class PRQuadTreeImage : public SpatialImageBase {
 
  public:
   PRQuadTreeImage(){
-    root= new NodeQuadTree<pnm::rgb_pixel>();
-    nroot= new NodeQuadTree<pnm::rgb_pixel>();
+    root= new NodeQuadTree();
+    nroot= new NodeQuadTree();
   }
   void load(const std::string& filename) override {
       pnm::image<pnm::rgb_pixel> ppm = pnm::read(filename);
@@ -218,8 +227,6 @@ class PRQuadTreeImage : public SpatialImageBase {
       builQuadTree(0,ppm.x_size()-1,0,ppm.y_size()-1,this->root,ppm);
   }
   void compress(const std::string& filename) override {
-      this->nextPostInsert=0;
-      this->root->address=0;
       insertPostOrden(root,filename);
       this->rootDirection=root->address;
   }
