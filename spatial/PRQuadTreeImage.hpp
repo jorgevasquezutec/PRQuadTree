@@ -31,20 +31,6 @@ struct NodeQuadTree{
       this->q4=nullptr;
       this->isleaf=false;
     }
-
-    void print(int &nodeCount, std::ostream& os = std::cout)
-    {
-        if (isleaf)
-        {
-            os << startx << "," << endx << "," << starty << "," << endy << ",";
-            printRGBPixel(pixel,",", os);
-        }
-        else
-        {
-            os << nodeCount++ << ",*";
-        }
-    }
-
 };
 
 /**
