@@ -20,9 +20,9 @@ struct NodeQuadTree{
     NodeQuadTree *q3;
     NodeQuadTree *q4;
     bool isleaf;
-    uint16_t red;
-    uint16_t green;
-    uint16_t blue;
+    uint8_t red;
+    uint8_t green;
+    uint8_t blue;
     int startx;
     int endx;
     int starty;
@@ -33,6 +33,47 @@ struct NodeQuadTree{
       this->q3=nullptr;
       this->q4=nullptr;
       this->isleaf=false;
+    }
+  long write(std::fstream &stream) {
+        stream.seekg(0,std::ios::end);
+        long pos_begin = stream.tellp();
+        if(isleaf){
+            stream.write((char *) &isleaf, sizeof(isleaf));
+            stream.write((char *) &red, sizeof(red));
+            stream.write((char *) &green, sizeof(green));
+            stream.write((char *) &blue, sizeof(blue));
+            stream.write((char *) &startx, sizeof(startx));
+            stream.write((char *) &starty, sizeof(starty));
+            stream.write((char *) &endx, sizeof(endx));
+            stream.write((char *) &endy, sizeof(endy));
+        }else{
+            stream.write((char *) &isleaf, sizeof(isleaf));
+            stream.write((char *) &q1address, sizeof(q1address));
+            stream.write((char *) &q2address, sizeof(q2address));
+            stream.write((char *) &q3address, sizeof(q3address));
+            stream.write((char *) &q4address, sizeof(q4address));
+        }
+        return pos_begin;
+    }
+    bool read(std::fstream &stream) {
+        stream.read((char *) &isleaf, sizeof(isleaf));
+        if(isleaf){
+            stream.read((char *) &red, sizeof(red));
+            stream.read((char *) &green, sizeof(green));
+            stream.read((char *) &blue, sizeof(blue));
+            stream.read((char *) &startx, sizeof(startx));
+            stream.read((char *) &starty, sizeof(starty));
+            stream.read((char *) &endx, sizeof(endx));
+            stream.read((char *) &endy, sizeof(endy));
+        }
+        else{
+            stream.read((char *) &q1address, sizeof(q1address));
+            stream.read((char *) &q2address, sizeof(q2address));
+            stream.read((char *) &q3address, sizeof(q3address));
+            stream.read((char *) &q4address, sizeof(q4address));
+        }
+         if (stream.fail()) return false;
+        return true;
     }
 };
 
@@ -76,9 +117,9 @@ class PRQuadTreeImage : public SpatialImageBase {
 
       if(!diffPix(startx,starty,endx,endy,ppm)){
           parent->isleaf=true;
-          parent->blue=(uint16_t)ppm[starty][startx].blue;
-          parent->red=(uint16_t)ppm[starty][startx].red;
-          parent->green=(uint16_t)ppm[starty][startx].green;
+          parent->blue=ppm[starty][startx].blue;
+          parent->red=ppm[starty][startx].red;
+          parent->green=ppm[starty][startx].green;
           parent->startx=startx;
           parent->starty=starty;
           parent->endx=endx;
@@ -109,7 +150,7 @@ class PRQuadTreeImage : public SpatialImageBase {
               {
                   for(int x=current->startx; x<=current->endx; ++x)
                   { 
-                      image[y][x]=pnm::rgb_pixel((uint8_t)current->red,(uint8_t)current->green,(uint8_t)current->blue);                     
+                      image[y][x]=pnm::rgb_pixel(current->red,current->green,current->blue);                     
                   }
               }
            }
@@ -125,8 +166,6 @@ class PRQuadTreeImage : public SpatialImageBase {
         insertPostOrden(current->q2,filename);
         insertPostOrden(current->q3,filename);
         insertPostOrden(current->q4,filename);
-        //WriteNode(*current,this->nextPostInsert,filename);
-        // std::cout<<this->nextPostInsert<<std::endl;
         if(current->q1!=nullptr){
           current->q1address=current->q1->address;
         }
@@ -179,9 +218,7 @@ class PRQuadTreeImage : public SpatialImageBase {
         outFile.open(filename,std::ios::in| std::ios::out| std::ios::binary | std::ofstream::app);
         long _pos;
         if(outFile.is_open()){
-            outFile.seekg(0,std::ios::end);
-            outFile.write((char* )&_reg, sizeof(NodeQuadTree));
-            _pos=(long)outFile.tellg()- (long)sizeof(NodeQuadTree);
+            _pos = _reg.write(outFile);
             outFile.close();
         }
         return _pos;
@@ -189,12 +226,12 @@ class PRQuadTreeImage : public SpatialImageBase {
   
 
   NodeQuadTree readNode(long pos,const std::string& filename){
-        std::ifstream outFile;
+        std::fstream outFile;
         NodeQuadTree obj;
-        outFile.open(filename,std::ios::in| std::ios::out| std::ios::binary);
+        outFile.open(filename,std::ios::in| std::ios::binary);
         if (outFile.is_open()) {
             outFile.seekg(pos, std::ios::beg);
-            outFile.read((char *) &obj, sizeof(NodeQuadTree));
+            obj.read(outFile);
             outFile.close();
         }
         return obj;

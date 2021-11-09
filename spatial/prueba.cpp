@@ -9,9 +9,9 @@ int main()
     PRQuadTreeImage qt;
     PNMImage comparator;
     qt.load("sample.ppm");
-    qt.compress("sample.qt");
-    qt.decompress("sample.qt");
+    qt.compress("sample2.qt");
+    qt.decompress("sample2.qt");
     qt.convertToPGM("sample2.ppm");
-    std::cout<< comparator.equals("sample.ppm", "sample2.ppm")<<std::endl;
+    std::cout<< comparator.equals("sample2.ppm", "sample.ppm")<<std::endl;
     return 0;
 }

@@ -4,23 +4,60 @@
 using namespace std;
 
 struct test{
-    long pos{-1};
+    long address{-1};
     uint8_t red;
-    uint8_t geeen;
+    uint8_t green;
     uint8_t blue;
+    bool isleaf;
+    long q1address{-1};
+    long q2address{-1};
+    long q3address{-1};
+    long q4address{-1};
+    int startx;
+    int starty;
+    int endx;
+    int endy;
     long write(std::fstream &stream) {
+        stream.seekg(0,std::ios::end);
         long pos_begin = stream.tellp();
-        stream.write((char *) &pos, sizeof(pos));
-        stream.write((char *) &red, sizeof(red));
-        stream.write((char *) &blue, sizeof(blue));
+        if(isleaf){
+            stream.write((char *) &isleaf, sizeof(isleaf));
+            stream.write((char *) &red, sizeof(red));
+            stream.write((char *) &green, sizeof(red));
+            stream.write((char *) &blue, sizeof(blue));
+            stream.write((char *) &startx, sizeof(startx));
+            stream.write((char *) &starty, sizeof(starty));
+            stream.write((char *) &endx, sizeof(endx));
+            stream.write((char *) &endy, sizeof(endy));
+        }else{
+            stream.write((char *) &isleaf, sizeof(isleaf));
+            stream.write((char *) &q1address, sizeof(q1address));
+            stream.write((char *) &q2address, sizeof(q2address));
+            stream.write((char *) &q3address, sizeof(q3address));
+            stream.write((char *) &q3address, sizeof(q4address));
+        }
         return pos_begin;
     }
 
-      bool read(std::fstream &stream) {
-        stream.read((char *) &pos, sizeof(pos));
-        stream.read((char *) &geeen, sizeof(geeen));
-        stream.read((char *) &blue, sizeof(blue));
-        if (stream.fail()) return false;
+
+    bool read(std::fstream &stream) {
+        stream.read((char *) &isleaf, sizeof(isleaf));
+        if(isleaf){
+            stream.read((char *) &red, sizeof(red));
+            stream.read((char *) &green, sizeof(red));
+            stream.read((char *) &blue, sizeof(red));
+            stream.read((char *) &startx, sizeof(startx));
+            stream.read((char *) &starty, sizeof(starty));
+            stream.read((char *) &endx, sizeof(endx));
+            stream.read((char *) &endy, sizeof(endy));
+        }
+        else{
+            stream.read((char *) &q1address, sizeof(q1address));
+            stream.read((char *) &q2address, sizeof(q2address));
+            stream.read((char *) &q3address, sizeof(q3address));
+            stream.read((char *) &q3address, sizeof(q4address));
+        }
+         if (stream.fail()) return false;
         return true;
     }
 };
@@ -28,12 +65,10 @@ struct test{
 
 long  WriteNode(test _reg,const std::string& filename){
         std::fstream outFile;
-        outFile.open(filename,std::ios::in| ios::out| ios::binary | std::ofstream::app);
+        outFile.open(filename,std::ios::in| std::ios::out| std::ios::binary | std::ios::app);
         long _pos;
         if(outFile.is_open()){
-            outFile.seekg(0,ios::end);
-            outFile.write((char* )&_reg, sizeof(test));
-            _pos=outFile.tellg()- sizeof(test);
+            _pos = _reg.write(outFile);
             outFile.close();
         }
         return _pos;
@@ -41,12 +76,12 @@ long  WriteNode(test _reg,const std::string& filename){
   
 
 test readNode(long pos,const std::string& filename){
-    ifstream outFile;
+    fstream outFile;
     test obj;
-    outFile.open(filename,ios::in| ios::out| ios::binary);
+    outFile.open(filename,ios::in | ios::binary);
     if (outFile.is_open()) {
         outFile.seekg(pos, ios::beg);
-        outFile.read((char *) &obj, sizeof(test));
+        obj.read(outFile);
         outFile.close();
     }
     return obj;
@@ -54,14 +89,14 @@ test readNode(long pos,const std::string& filename){
 
 int main(){
 
-    struct test t1 = {0, 128, 0,0};
-    struct test t2 = {1, 128, 0,128};
-    struct test t3 = {3, 128, 128,128};
-    struct test t4 = {4, 0, 0, 0};
-    long t1pos= WriteNode(t1,"prueba.txt");
-    long t2pos= WriteNode(t2,"prueba.txt");
-    long t3pos= WriteNode(t3,"prueba.txt");
-    long t4pos= WriteNode(t4,"prueba.txt");
+    struct test nodo1 = {0, 128,   0,   0, 0,100,200,300,400,-1,-1,-1,-1};
+    struct test hijo1 = {1, 128,   0, 128, 1, -1, -1, -1, -1, 1, 2, 3, 4};
+    struct test hijo2 = {1, 128,   0, 128, 1, -1, -1, -1, -1, 1, 2, 3, 7};
+    struct test nodo3 = {4,   0,   0,   0, 0, 80, 40, 10, 20,-1,-1,-1,-1};
+    long t1pos= WriteNode(nodo1,"prueba.txt");
+    long t2pos= WriteNode(hijo1,"prueba.txt");
+    long t3pos= WriteNode(hijo2,"prueba.txt");
+    long t4pos= WriteNode(nodo3,"prueba.txt");
   
     auto tmp= readNode(t3pos,"prueba.txt");
     return 0;
