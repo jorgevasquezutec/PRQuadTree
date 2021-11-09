@@ -6,13 +6,13 @@
 #include "PRQuadTreeImage.hpp"
 
 using namespace utec::spatial;
-
+//./tests/validation_test
 TEST(QuadTest, BasicTest) {
   PRQuadTreeImage qt;
-  qt.load("../tests/images/utec.pgm");
+  qt.load("../tests/images/utec.ppm");
   qt.compress("../tests/images/prueba.qt");
   qt.decompress("../tests/images/prueba.qt");
-  qt.convertToPGM("../tests/images/prueba.pgm");
+  qt.convertToPGM("../tests/images/prueba.ppm");
 
   PNMImage comparator;
   EXPECT_TRUE(comparator.equals("../tests/images/utec.pgm", "../tests/images/prueba.pgm"));
