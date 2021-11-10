@@ -34,7 +34,6 @@ struct NodeQuadTree{
       isleaf=false;
     }
     long write(std::fstream &stream) {
-        stream.seekg(0,std::ios::end);
         long pos_begin = stream.tellp();
         if(isleaf){
             stream.write((char *) &isleaf, sizeof(isleaf));
@@ -184,6 +183,7 @@ class PRQuadTreeImage : public SpatialImageBase {
         outFile.open(filename,std::ios::in| std::ios::out| std::ios::binary | std::ofstream::app);
         long _pos;
         if(outFile.is_open()){
+            outFile.seekg(0,std::ios::end);
             _pos = _reg.write(outFile);
             outFile.close();
         }
