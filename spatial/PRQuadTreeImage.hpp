@@ -6,6 +6,7 @@
 #include <cmath>
 #include <queue>
 #include <unordered_map>
+#include <cstdio>
 namespace utec {
 namespace spatial {
 
@@ -247,16 +248,12 @@ class PRQuadTreeImage : public SpatialImageBase {
       pnm::image<pnm::rgb_pixel> ppm = pnm::read(filename);
       this->width=ppm.width();
       this->height=ppm.height();
-      std::ifstream file(filename);
-      std::string line;
-      std::getline(file,magicNumber);
-      std::getline(file,name);
-      std::getline(file,line);
-      std::getline(file,value);
-      file.close();
       builQuadTree(0,ppm.x_size()-1,0,ppm.y_size()-1,this->root,ppm);
   }
   void compress(const std::string& filename) override {
+      //clean file
+      const char *c=filename.c_str();
+      std::remove(c);
       insertPostOrden(root,filename);
       this->rootDirection=root->address;
   }

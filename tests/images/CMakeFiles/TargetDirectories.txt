@@ -1,0 +1,3 @@
+/mnt/c/Users/jorge/Documents/utec/eda/lab4/PRQuadTree/tests/images/CMakeFiles/rebuild_cache.dir
+/mnt/c/Users/jorge/Documents/utec/eda/lab4/PRQuadTree/tests/images/CMakeFiles/edit_cache.dir
+/mnt/c/Users/jorge/Documents/utec/eda/lab4/PRQuadTree/tests/images/CMakeFiles/validation_test.dir

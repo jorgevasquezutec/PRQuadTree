@@ -1,9 +1,8 @@
 #include <gtest/gtest.h>
-
 #include <iostream>
-
 #include "PNMImage.hpp"
 #include "PRQuadTreeImage.hpp"
+#include <sys/stat.h>
 
 using namespace utec::spatial;
 //./tests/validation_test

@@ -1,0 +1,1 @@
+/usr/bin/c++    -rdynamic CMakeFiles/validation_test.dir/validation_test.o  -o validation_test  -lspatial -lgtest 
