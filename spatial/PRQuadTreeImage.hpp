@@ -4,9 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
-#include <queue>
-#include <unordered_map>
-#include <cstdio>
+
 namespace utec {
 namespace spatial {
 
@@ -29,13 +27,13 @@ struct NodeQuadTree{
     int starty;
     int endy;
     NodeQuadTree(){
-      this->q1=nullptr;
-      this->q2=nullptr;
-      this->q3=nullptr;
-      this->q4=nullptr;
-      this->isleaf=false;
+      q1=nullptr;
+      q2=nullptr;
+      q3=nullptr;
+      q4=nullptr;
+      isleaf=false;
     }
-  long write(std::fstream &stream) {
+    long write(std::fstream &stream) {
         stream.seekg(0,std::ios::end);
         long pos_begin = stream.tellp();
         if(isleaf){
@@ -73,7 +71,7 @@ struct NodeQuadTree{
             stream.read((char *) &q3address, sizeof(q3address));
             stream.read((char *) &q4address, sizeof(q4address));
         }
-         if (stream.fail()) return false;
+        if (stream.fail()) return false;
         return true;
     }
 };
@@ -87,13 +85,9 @@ class PRQuadTreeImage : public SpatialImageBase {
   NodeQuadTree *nroot;
   int width;
   int height;
-  std::string name;
-  std::string magicNumber;
-  std::string value;
   long rootDirection{-1};
 
   bool diffPix(int startx,int starty,int endx,int endy,pnm::image<pnm::rgb_pixel> &ppm){
-    
     auto first=ppm[starty][startx];
     for(int y=starty; y<=endy; ++y)
     {
@@ -103,13 +97,6 @@ class PRQuadTreeImage : public SpatialImageBase {
               return true;
             }
         }
-    }
-    return false;
-  }
-
-  bool comparePixel(pnm::rgb_pixel &pix,NodeQuadTree* node){
-    if(pix.blue==node->blue && pix.red ==node->red && pix.green==node->green){
-      return true;
     }
     return false;
   }
@@ -138,70 +125,48 @@ class PRQuadTreeImage : public SpatialImageBase {
   }
 
    void fillImagePostOrden(pnm::image<pnm::rgb_pixel> &image,NodeQuadTree* &current){
-        if(current==nullptr){
-          return;
-        }
-        else{
-           fillImagePostOrden(image,current->q1);
-           fillImagePostOrden(image,current->q2);
-           fillImagePostOrden(image,current->q3);
-           fillImagePostOrden(image,current->q4);
-           if(current->isleaf){
-              for(int y=current->starty; y<=current->endy; ++y)
-              {
-                  for(int x=current->startx; x<=current->endx; ++x)
-                  { 
-                      image[y][x]=pnm::rgb_pixel(current->red,current->green,current->blue);                     
-                  }
+        if(current==nullptr) return;
+        fillImagePostOrden(image,current->q1);
+        fillImagePostOrden(image,current->q2);
+        fillImagePostOrden(image,current->q3);
+        fillImagePostOrden(image,current->q4);
+        if(current->isleaf){
+          for(int y=current->starty; y<=current->endy; ++y)
+          {
+              for(int x=current->startx; x<=current->endx; ++x)
+              { 
+                  image[y][x]=pnm::rgb_pixel(current->red,current->green,current->blue);                     
               }
-           }
+          }
         }
   }
 
 
   void insertPostOrden(NodeQuadTree* &current,const std::string& filename){
-      if(current==nullptr){
-        return;
-      }else{
-        insertPostOrden(current->q1,filename);
-        insertPostOrden(current->q2,filename);
-        insertPostOrden(current->q3,filename);
-        insertPostOrden(current->q4,filename);
-        if(current->q1!=nullptr){
-          current->q1address=current->q1->address;
-        }
-        if(current->q2!=nullptr){
-          current->q2address=current->q2->address;
-        }
-        if(current->q3!=nullptr){
-          current->q3address=current->q3->address;
-        }
-        if(current->q4!=nullptr){
-          current->q4address=current->q4->address;
-        }
-        current->address=WriteNode(*current,filename);
-
+      if(current==nullptr) return;
+      insertPostOrden(current->q1,filename);
+      insertPostOrden(current->q2,filename);
+      insertPostOrden(current->q3,filename);
+      insertPostOrden(current->q4,filename);
+      if(current->q1!=nullptr){
+        current->q1address=current->q1->address;
       }
+      if(current->q2!=nullptr){
+        current->q2address=current->q2->address;
+      }
+      if(current->q3!=nullptr){
+        current->q3address=current->q3->address;
+      }
+      if(current->q4!=nullptr){
+        current->q4address=current->q4->address;
+      }
+      current->address=WriteNode(*current,filename);
   }
 
   void readDFS(long pos,NodeQuadTree* &current,const std::string& filename){
-      if(pos==-1){
-        return;
-      }
+      if(pos==-1) return;
       NodeQuadTree obj=readNode(pos,filename);
-      current->address=obj.address;
-      current->isleaf=obj.isleaf;
-      current->red=obj.red;
-      current->blue=obj.blue;
-      current->green=obj.green;
-      current->startx=obj.startx;
-      current->starty=obj.starty;
-      current->endx=obj.endx;
-      current->endy=obj.endy;
-      current->q1address=obj.q1address;
-      current->q2address=obj.q2address;
-      current->q3address=obj.q3address;
-      current->q4address=obj.q4address;
+      *current=obj;
       current->q1= new NodeQuadTree();
       current->q2= new NodeQuadTree();
       current->q3= new NodeQuadTree();
@@ -238,12 +203,25 @@ class PRQuadTreeImage : public SpatialImageBase {
         return obj;
     }
 
+  void deleteQuadTree(NodeQuadTree* &current){
+     if(current==nullptr) return;
+        deleteQuadTree(current->q1);
+        deleteQuadTree(current->q2);
+        deleteQuadTree(current->q3);
+        deleteQuadTree(current->q4);
+        delete current;
+  }
+
 
  public:
   PRQuadTreeImage(){
     root= new NodeQuadTree();
     nroot= new NodeQuadTree();
   }
+  ~PRQuadTreeImage(){
+    deleteQuadTree(root);
+    deleteQuadTree(nroot);
+  } 
   void load(const std::string& filename) override {
       pnm::image<pnm::rgb_pixel> ppm = pnm::read(filename);
       this->width=ppm.width();
@@ -265,6 +243,8 @@ class PRQuadTreeImage : public SpatialImageBase {
        fillImagePostOrden(newFile,nroot);
        pnm::write(filename, newFile, pnm::format::ascii);
    }
+
+  
 };
 
 }  // namespace spatial
